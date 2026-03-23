@@ -1,0 +1,6 @@
+processedVideo/
+newVideo/
+__pycache__/
+*.pyc
+*.wav
+*.tmp
