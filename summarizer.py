@@ -32,10 +32,12 @@ def summarize(transcript: str) -> tuple[str, str]:
 
     logger.info("Sending transcript to Claude CLI for summarization (%d chars)...", len(transcript))
     result = subprocess.run(
-        ["claude", "-p", prompt],
+        ["claude", "-p"],
+        input=prompt,
         capture_output=True,
         text=True,
-        timeout=300,
+        encoding="utf-8",
+        timeout=600,
     )
 
     if result.returncode != 0:
