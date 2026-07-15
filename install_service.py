@@ -28,11 +28,28 @@ def install():
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode == 0:
-        print(f"Task '{TASK_NAME}' created successfully.")
-        print("The pipeline will auto-start at logon.")
-    else:
+    if result.returncode != 0:
         print(f"Failed to create task: {result.stderr}")
+        sys.exit(1)
+
+    _disable_execution_time_limit()
+    print(f"Task '{TASK_NAME}' created successfully.")
+    print("The pipeline will auto-start at logon.")
+
+
+def _disable_execution_time_limit():
+    """schtasks defaults to killing tasks after 72 hours; only PowerShell can turn that off."""
+    ps_command = (
+        f"Set-ScheduledTask -TaskName '{TASK_NAME}' "
+        "-Settings (New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 0))"
+    )
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", ps_command],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"Failed to disable the 72-hour execution time limit: {result.stderr}")
         sys.exit(1)
 
 
