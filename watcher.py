@@ -2,7 +2,9 @@ import logging
 from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+# PollingObserver instead of the native observer: ReadDirectoryChangesW handles
+# go stale across hibernate/resume, silently killing event delivery.
+from watchdog.observers.polling import PollingObserver as Observer
 
 import config
 from file_manager import wait_for_stable_file

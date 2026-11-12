@@ -1,5 +1,9 @@
 processedVideo/
 newVideo/
+textTranscript/
+summary/
+.venv/
+.idea/
 __pycache__/
 *.pyc
 *.wav

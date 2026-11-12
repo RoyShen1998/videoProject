@@ -1,24 +1,47 @@
 import subprocess
 import logging
 
+import config
+
 logger = logging.getLogger(__name__)
 
 PROMPT_TEMPLATE = """\
-You are an expert meeting summarizer. Given a transcript, produce:
+Below is an automatic transcript of a work meeting. Write a summary for someone who \
+was not in the meeting and needs to know what was discussed, what was decided, and \
+what they or others now have to do.
 
-1. **Title**: A short descriptive title for the meeting (max 8 words, suitable for a filename).
-2. **Summary**: A concise meeting summary in markdown with these sections:
-   - **Overview** (1-2 sentences)
-   - **Key Topics Discussed**
-   - **Decisions Made**
-   - **Action Items** (with owners if mentioned)
+About the transcript:
+- It was produced by speech recognition, so some words are mis-heard, especially \
+product names and technical terms. Terms this team uses often: {glossary}. When a \
+phrase is clearly a garbled version of one of these (or of another term that the \
+context makes obvious), use the correct term.
+- Speakers may be labelled "Speaker 1", "Speaker 2" and so on. These labels come from \
+voice matching and are occasionally wrong. Where the conversation makes a speaker's \
+real name clear (someone addresses them by name, or they introduce themselves), use \
+the name. Otherwise keep the label rather than guessing.
 
-Respond in EXACTLY this format:
+The summary is markdown with these sections:
+- **Overview**: one or two sentences.
+- **Key Topics Discussed**
+- **Decisions Made**
+- **Action Items**: one per line, with the owner and any deadline that was mentioned. \
+Say when the owner is unclear instead of assigning one.
+- **Open Questions**: anything raised but left unresolved. Omit the section if there \
+are none.
 
-TITLE: <your title here>
+Stick to what was said: include ticket numbers, dates and figures as stated, and leave \
+out anything you would have to invent. Keep it concise: one line per point, and no \
+commentary on the quality of the recording or transcript.
+
+Also give the meeting a short descriptive title (at most 8 words) that works as a \
+filename.
+
+Respond in exactly this format, with nothing before TITLE:
+
+TITLE: <title>
 
 SUMMARY:
-<your markdown summary here>
+<markdown summary>
 
 Here is the transcript:
 
@@ -28,11 +51,14 @@ Here is the transcript:
 
 def summarize(transcript: str) -> tuple[str, str]:
     """Send transcript to Claude CLI and return (title, summary_markdown)."""
-    prompt = PROMPT_TEMPLATE.format(transcript=transcript)
+    prompt = PROMPT_TEMPLATE.format(
+        transcript=transcript,
+        glossary=", ".join(config.VOCABULARY) or "(none listed)",
+    )
 
-    logger.info("Sending transcript to Claude CLI for summarization (%d chars)...", len(transcript))
+    logger.info("Sending transcript to Claude CLI for summarization (%d chars, model=%s)...", len(transcript), config.CLAUDE_MODEL)
     result = subprocess.run(
-        ["claude", "-p"],
+        ["claude", "-p", "--model", config.CLAUDE_MODEL],
         input=prompt,
         capture_output=True,
         text=True,
